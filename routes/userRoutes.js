@@ -3,7 +3,8 @@ const router = express.Router();
 const CryptoJS = require("crypto-js");
 const dotenv = require('dotenv');
 const User = require('../Models/User');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const { verifyUserToken } = require('./utilities')
 dotenv.config()
 
 //Register
@@ -40,13 +41,12 @@ router.post("/login", async(req, res) => {
 
         //Decrypt Password 
         const decryptedPassword = CryptoJS.AES.decrypt(hashedPassword, process.env.SEC_KEY_CJS).toString(CryptoJS.enc.Utf8)
-
+        console.log(decryptedPassword);
         //Generate Token
         const accessToken = jwt.sign({ id: findUser._id, isAdmin: findUser.isAdmin }, process.env.JWT_SECRET_TOKEN, { expiresIn: '15d' })
             //Send user
         if (decryptedPassword === req.body.password) {
-            console.log(accessToken);
-            res.status(200).json({ username: findUser.username, email: findUser.email, accessToken })
+            res.status(200).json({ id: findUser._id, username: findUser.username, email: findUser.email, accessToken })
         } else {
             res.status(401).json('Wrong email or password')
             return
@@ -57,8 +57,16 @@ router.post("/login", async(req, res) => {
     }
 });
 
-//Delete
-router.delete('/:id', async(req, res) => {
+
+
+//Delete user
+router.delete('/:id', verifyUserToken, async(req, res) => {
+    try {
+        const userDeleted = await User.findByIdAndDelete(req.user.id)
+        res.status(200).json(userDeleted)
+    } catch (error) {
+        res.status(500).json('Something went wrong!')
+    }
 
 })
 
