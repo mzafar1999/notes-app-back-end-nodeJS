@@ -5,16 +5,21 @@ const dotenv = require('dotenv');
 const User = require('../Models/User');
 dotenv.config()
 router.post("/register", async(req, res) => {
-    const { username, email, password } = req.body;
-    const hashedPassowrd = CryptoJS.AES.encrypt(password, process.env.SEC_KEY_CJS).toString();
 
     try {
-        const newUser = new User({ username, email, password: hashedPassowrd })
-        let user = await newUser.save()
-        res.status(201).json({ username: user.username, email: user.email })
+        const userExist = await User.findOne({ email: req.body.email })
+        if (!userExist) {
+            const encrpytedPassword = CryptoJS.AES.encrypt(req.body.password, process.env.SEC_KEY_CJS).toString();
+            const newUser = new User({ username: req.body.username, email: req.body.email, password: encrpytedPassword })
+            let user = await newUser.save()
+            res.status(201).json({ username: user.username, email: user.email })
+        } else {
+            res.status(409).json('User already exist with this email address')
+
+        }
     } catch (error) {
-        res.status(500).json('something went wrong')
-        return
+        res.status(500).json(error)
+
     }
 });
 
