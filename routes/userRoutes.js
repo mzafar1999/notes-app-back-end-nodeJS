@@ -5,7 +5,11 @@ const dotenv = require('dotenv');
 const User = require('../Models/User');
 const jwt = require('jsonwebtoken');
 const { verifyUserToken } = require('./utilities')
+const cors = require('cors')
+
+router.use(cors())
 dotenv.config()
+
 
 //Register
 router.post("/register", async(req, res) => {
@@ -41,12 +45,12 @@ router.post("/login", async(req, res) => {
 
         //Decrypt Password 
         const decryptedPassword = CryptoJS.AES.decrypt(hashedPassword, process.env.SEC_KEY_CJS).toString(CryptoJS.enc.Utf8)
-        console.log(decryptedPassword);
-        //Generate Token
+            //Generate Token
         const accessToken = jwt.sign({ id: findUser._id, isAdmin: findUser.isAdmin }, process.env.JWT_SECRET_TOKEN, { expiresIn: '15d' })
-            //Send user
+
+        //Send user
         if (decryptedPassword === req.body.password) {
-            res.status(200).json({ id: findUser._id, username: findUser.username, email: findUser.email, accessToken })
+            res.status(200).json({ id: findUser._id, username: findUser.username, email: findUser.email, accessToken, notes: findUser.notes })
         } else {
             res.status(401).json('Wrong email or password')
             return
@@ -56,8 +60,6 @@ router.post("/login", async(req, res) => {
         res.status(500).json(error)
     }
 });
-
-
 
 //Delete user
 router.delete('/:id', verifyUserToken, async(req, res) => {
@@ -69,5 +71,23 @@ router.delete('/:id', verifyUserToken, async(req, res) => {
     }
 
 })
+
+//Get note
+router.post('/note', async(req, res) => {
+    const findUser = await User.findById(req.body.user)
+    findUser.notes.push({ note: req.body.note })
+    findUser.save()
+    res.status(201).send('Note created')
+})
+
+const getUsers = async() => {
+    try {
+        const users = await User.find()
+        return users
+    } catch (error) {
+
+    }
+}
+
 
 module.exports = router;
