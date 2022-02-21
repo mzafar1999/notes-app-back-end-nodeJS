@@ -77,7 +77,7 @@ router.post('/note', async(req, res) => {
     const findUser = await User.findById(req.body.user)
     findUser.notes.push({ note: req.body.note })
     findUser.save()
-    res.status(201).send('Note created')
+    res.status(201).json({ note: req.body.note })
 })
 
 const getUsers = async() => {
